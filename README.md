@@ -49,7 +49,9 @@ proyecto-2-data-mining/
 ├── proyecto2-datamining-p5.ipynb   # Parte V   — minería de flujos de datos
 ├── proyecto2-datamining-p6.ipynb   # Parte VI  — reducción de dimensionalidad
 ├── proyecto2-datamining-p7.ipynb   # Parte VII — análisis crítico y ético
-├── proyecto2-datamining-p*.py      # exports Databricks (fuente de cada notebook)
+│
+├── informe.tex / informe.pdf       # reporte final (formato IEEE)
+├── imgs/                           # figuras de los notebooks usadas por el informe
 │
 ├── config.py                       # rutas, parámetros de muestreo, umbrales
 ├── preprocessing.py                # streaming JSON + muestreo estratificado
