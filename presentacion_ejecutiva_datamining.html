@@ -1,0 +1,768 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Lo que cuentan las reseñas</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Space+Grotesk:wght@400;500;600&family=Space+Mono:wght@400;700&display=swap');
+
+:root{
+  --ink:#15110e; --ink-2:#1d1813; --ink-3:#272019;
+  --paper:#ece2d0; --paper-dim:#b7ab96; --muted:#8a7c67;
+  --amber:#f0a93c; --coral:#e6604a; --sage:#9bb083; --lilac:#cf9bd0; --steel:#7fb0c8;
+  --line:rgba(236,226,208,.14);
+  --serif:'Fraunces',Georgia,serif;
+  --sans:'Space Grotesk',system-ui,sans-serif;
+  --mono:'Space Mono','JetBrains Mono',monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;overflow:hidden;background:var(--ink);color:var(--paper);
+  font-family:var(--sans);-webkit-font-smoothing:antialiased}
+body{position:fixed;inset:0}
+#sky{position:fixed;inset:0;z-index:0;opacity:.5}
+
+.deck{position:fixed;inset:0;z-index:1}
+.scene{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:center;
+  padding:clamp(28px,5.5vw,90px);padding-bottom:clamp(96px,14vh,150px);
+  opacity:0;visibility:hidden;transform:scale(.985);pointer-events:none;
+  transition:opacity .6s ease, transform .8s cubic-bezier(.2,.7,.2,1);overflow:hidden}
+.scene.is-active{opacity:1;visibility:visible;transform:none;pointer-events:auto}
+.scene.is-past{transform:scale(1.02) translateY(-1.5%)}
+
+.eyebrow{font-family:var(--mono);font-size:.72rem;letter-spacing:.26em;text-transform:uppercase;
+  color:var(--amber);display:flex;align-items:center;gap:.8em;margin-bottom:1.3rem}
+.eyebrow::before{content:"";width:26px;height:1px;background:var(--amber);opacity:.8}
+
+/* slides técnicas: acento coral */
+.scene.tech .eyebrow{color:var(--coral)}
+.scene.tech .eyebrow::before{background:var(--coral)}
+
+h1.title{font-family:var(--serif);font-weight:600;line-height:.95;letter-spacing:-.02em;
+  font-size:clamp(2.8rem,9vw,7.2rem);max-width:16ch}
+h2{font-family:var(--serif);font-weight:500;line-height:1.02;letter-spacing:-.015em;
+  font-size:clamp(1.9rem,5vw,3.9rem);max-width:20ch}
+.lead{font-size:clamp(1rem,1.6vw,1.3rem);color:var(--paper-dim);max-width:50ch;
+  line-height:1.5;margin-top:1.2rem}
+.kicker{font-family:var(--mono);color:var(--muted);font-size:.82rem;letter-spacing:.05em;margin-top:1rem}
+em.hl{font-style:normal;color:var(--amber)} em.hl.c{color:var(--coral)} em.hl.s{color:var(--sage)}
+
+.stat-num{font-family:var(--mono);font-weight:700;line-height:1;
+  font-size:clamp(2.4rem,7vw,5.4rem);color:var(--paper)}
+.stat-num small{font-size:.34em;color:var(--muted);font-weight:400}
+
+.row{display:flex;gap:clamp(20px,4vw,60px);align-items:center;flex-wrap:wrap}
+.col{flex:1 1 0;min-width:0}
+.grid-stats{display:flex;gap:clamp(18px,4vw,52px);flex-wrap:wrap;margin-top:1.6rem}
+.gs b{display:block;font-family:var(--mono);font-size:clamp(1.7rem,3.8vw,3rem);color:var(--paper)}
+.gs span{font-size:.82rem;color:var(--muted);letter-spacing:.04em}
+
+/* ficha técnica en flujo */
+.ficha{margin-top:clamp(1.3rem,3.4vh,2.2rem);max-width:66ch;border-left:2px solid var(--coral);
+  padding-left:1rem;font-family:var(--mono);font-size:.74rem;color:var(--paper-dim);line-height:1.6}
+.ficha .t{color:var(--coral);letter-spacing:.16em;text-transform:uppercase;font-size:.64rem;display:block;margin-bottom:.35rem}
+.row + .ficha{width:100%}
+
+[data-step]{opacity:0;transform:translateY(15px);
+  transition:opacity .55s ease,transform .65s cubic-bezier(.2,.7,.2,1);will-change:opacity,transform}
+[data-step].on{opacity:1;transform:none}
+
+/* funnel */
+.funnel{display:flex;flex-direction:column;gap:13px;width:min(560px,46vw)}
+.frow{display:flex;align-items:center;gap:16px}
+.fbar{height:36px;border-radius:4px;background:var(--ink-3);position:relative;overflow:hidden;flex:1}
+.fbar i{position:absolute;inset:0;width:0;transition:width 1.05s cubic-bezier(.2,.7,.2,1);
+  background:linear-gradient(90deg,var(--amber),var(--coral))}
+.frow .lab{font-family:var(--mono);font-size:.78rem;min-width:14ch;color:var(--paper-dim)}
+.frow .val{font-family:var(--mono);font-size:.92rem;color:var(--paper);min-width:8ch;text-align:right}
+
+.viz{width:100%;height:min(54vh,500px)}
+.viz text{font-family:var(--mono)}
+
+/* rank list */
+.ranklist{display:flex;flex-direction:column;gap:11px;width:min(560px,52vw)}
+.rk{display:flex;align-items:center;gap:14px}
+.rk .nm{font-family:var(--mono);font-size:.86rem;min-width:16ch;color:var(--paper)}
+.rk .rbwrap{flex:1;height:22px;background:var(--ink-3);border-radius:4px;overflow:hidden}
+.rk .rb{height:22px;border-radius:4px;background:linear-gradient(90deg,var(--amber),var(--coral));width:0;transition:width .9s cubic-bezier(.2,.7,.2,1)}
+.rk.base .rb{background:var(--ink-3);border:1px solid var(--line)}
+.rk .rv{font-family:var(--mono);font-size:.78rem;color:var(--muted);min-width:6ch;text-align:right}
+
+/* lenses */
+.lenses{display:flex;gap:18px;margin-top:1.6rem;flex-wrap:wrap}
+.lens{flex:1 1 0;min-width:190px;background:var(--ink-2);border:1px solid var(--line);border-radius:14px;padding:20px}
+.lens .d{width:14px;height:14px;border-radius:50%;margin-bottom:.7rem}
+.lens h4{font-family:var(--serif);font-size:1.2rem;margin-bottom:.3rem}
+.lens p{font-size:.84rem;color:var(--paper-dim);line-height:1.4}
+.pill{display:inline-block;margin-top:1.4rem;font-family:var(--mono);font-size:.8rem;color:var(--paper);
+  background:var(--ink-3);border:1px solid var(--line);padding:.55rem .9rem;border-radius:30px}
+.pill em{color:var(--amber);font-style:normal}
+
+/* segment cards */
+.cards{display:grid;grid-template-columns:repeat(5,1fr);gap:13px;margin-top:1.3rem}
+.card{background:var(--ink-2);border:1px solid var(--line);border-radius:12px;padding:16px 15px;
+  min-height:210px;display:flex;flex-direction:column;gap:.45rem}
+.card .ico{font-size:1.45rem;line-height:1}
+.card h3{font-family:var(--serif);font-weight:600;font-size:1.1rem;line-height:1.05}
+.card .desc{font-size:.78rem;color:var(--paper-dim);line-height:1.42;flex:1}
+.card .met{font-family:var(--mono);font-size:.68rem;color:var(--amber);border-top:1px solid var(--line);padding-top:.5rem}
+.card.veteran{border-color:rgba(155,176,131,.45)}
+.card.veteran .met{color:var(--sage)}
+
+/* chips (temas latentes) */
+.chips{display:flex;gap:14px;flex-wrap:wrap;margin-top:1.5rem}
+.chip{background:var(--ink-2);border:1px solid var(--line);border-radius:12px;padding:14px 18px;max-width:30ch}
+.chip h4{font-family:var(--serif);font-weight:600;font-size:1.05rem;margin-bottom:.2rem}
+.chip p{font-size:.8rem;color:var(--paper-dim);line-height:1.4;font-family:var(--mono)}
+
+/* takeaways */
+.takes{display:flex;flex-direction:column;gap:1rem;margin-top:1.3rem;max-width:46ch}
+.take{display:flex;gap:1rem;align-items:flex-start}
+.take .n{font-family:var(--mono);color:var(--amber);font-size:1.05rem;padding-top:.1rem}
+.take p{font-size:clamp(1rem,1.5vw,1.22rem);line-height:1.38}
+.badge{display:inline-flex;align-items:center;gap:.6rem;margin-top:1.7rem;font-family:var(--mono);
+  font-size:.76rem;letter-spacing:.1em;color:var(--ink);background:var(--sage);padding:.7rem 1.1rem;border-radius:40px}
+
+/* tabla técnica (escalabilidad) */
+.datatable{margin-top:1.4rem;border-collapse:collapse;font-family:var(--mono);font-size:.82rem;width:min(680px,90vw)}
+.datatable th{text-align:left;color:var(--muted);font-weight:400;font-size:.7rem;letter-spacing:.1em;
+  text-transform:uppercase;padding:.5rem .9rem;border-bottom:1px solid var(--line)}
+.datatable td{padding:.5rem .9rem;border-bottom:1px solid var(--line);color:var(--paper-dim)}
+.datatable td.alg{color:var(--paper)}
+.datatable td.yes{color:var(--sage)} .datatable td.no{color:var(--coral)} .datatable td.mid{color:var(--amber)}
+
+.legend{display:flex;gap:1.1rem;flex-wrap:wrap;margin-top:.9rem;font-family:var(--mono);font-size:.72rem;color:var(--paper-dim)}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:.4rem;vertical-align:middle}
+
+.hud{position:fixed;left:0;right:0;bottom:0;z-index:3;display:flex;align-items:center;gap:12px;
+  padding:12px clamp(18px,4vw,36px);pointer-events:none}
+.rail{display:flex;gap:4px;pointer-events:auto;flex-wrap:wrap}
+.rail button{width:16px;height:4px;border-radius:3px;border:0;background:var(--ink-3);cursor:pointer;padding:0;transition:background .3s,width .3s}
+.rail button.done{background:var(--muted)}
+.rail button.now{background:var(--amber);width:28px}
+.hud .meta{font-family:var(--mono);font-size:.68rem;color:var(--muted);margin-left:auto;white-space:nowrap}
+.hint{position:fixed;left:50%;bottom:44px;transform:translateX(-50%);z-index:3;font-family:var(--mono);
+  font-size:.7rem;color:var(--muted);letter-spacing:.08em;opacity:.9;transition:opacity .5s;pointer-events:none}
+.hint.gone{opacity:0}
+kbd{font-family:var(--mono);background:var(--ink-3);border:1px solid var(--line);border-radius:5px;padding:.12em .5em;color:var(--paper-dim);font-size:.9em}
+
+@media (max-width:820px){ .cards{grid-template-columns:1fr 1fr} }
+@media (prefers-reduced-motion:reduce){ *{transition-duration:.001s!important;animation-duration:.001s!important} #sky{display:none} }
+</style>
+</head>
+<body>
+<canvas id="sky"></canvas>
+<main class="deck" id="deck">
+
+  <!-- 1 · Portada -->
+  <section class="scene" data-name="Portada">
+    <div class="eyebrow">Yelp Open Dataset · Minería de Datos</div>
+    <h1 class="title" data-step="0">Lo que cuentan<br>las reseñas</h1>
+    <p class="lead" data-step="1">126 mil reseñas, 380 ciudades, 17 años de opiniones. La pregunta simple detrás de todo el proyecto: ¿qué nos cuentan estos datos?</p>
+    <p class="kicker" data-step="2">Christian Frisancho · Camila Rodríguez · Marcelo Zuloeta — UTEC</p>
+  </section>
+
+  <!-- 2 · La muestra -->
+  <section class="scene" data-name="La muestra">
+    <div class="eyebrow">El punto de partida</div>
+    <div class="stat-num" data-step="0"><span class="count" data-target="6990280">0</span> <small>reseñas en todo Yelp</small></div>
+    <p class="lead" data-step="1">Demasiado para procesarlo a mano. Tomamos una muestra estratificada por ciudad y trabajamos sobre ella durante todo el proyecto.</p>
+    <div class="grid-stats" data-step="2">
+      <div class="gs"><b>2,943</b><span>negocios</span></div>
+      <div class="gs"><b>125,744</b><span>reseñas</span></div>
+      <div class="gs"><b>103,447</b><span>usuarios</span></div>
+      <div class="gs"><b>380</b><span>ciudades</span></div>
+    </div>
+    <div class="ficha" data-step="3"><span class="t">Cómo · Parte I</span>Los 5 archivos JSON se leen en streaming (un solo pase). Cada ciudad aporta negocios en proporción a su peso en el dataset (asignación proporcional, semilla fija 42, objetivo 3,000). Luego se recuperan todas las reseñas y usuarios de esos negocios. Artefactos en Parquet.</div>
+  </section>
+
+  <!-- 3 · TÉCNICA: el muestreo y su precio -->
+  <section class="scene tech" data-name="Aclaración · muestreo">
+    <div class="eyebrow">Aclaración técnica · Parte I & IV</div>
+    <h2 data-step="0">Estratificar tiene una ventaja y un costo</h2>
+    <div class="row" style="margin-top:1.4rem">
+      <div class="col" data-step="1">
+        <div style="font-family:var(--mono);font-size:.7rem;letter-spacing:.14em;text-transform:uppercase;color:var(--sage);margin-bottom:.6rem">La ventaja</div>
+        <p class="lead" style="margin-top:0">Muestrear proporcionalmente por ciudad da diversidad geográfica real (380 ciudades) y reduce el sesgo de trabajar en un solo mercado.</p>
+      </div>
+      <div class="col" data-step="2">
+        <div style="font-family:var(--mono);font-size:.7rem;letter-spacing:.14em;text-transform:uppercase;color:var(--coral);margin-bottom:.6rem">El costo</div>
+        <p class="lead" style="margin-top:0">Al tomar solo una fracción de los negocios de cada ciudad, se rompe la estructura de co-reseña: el <em class="hl c">88.1%</em> de los usuarios queda con una sola reseña, y el filtrado colaborativo se queda sin señal (cold-start).</p>
+      </div>
+    </div>
+    <div class="ficha" data-step="3"><span class="t">Dónde se paga</span>La matriz usuario-negocio queda con densidad 4.08×10⁻⁴. Por eso el sistema de recomendación (Parte IV) apoya el híbrido en el content-based, que sí puede puntuar con poca historia. Es un trade-off consciente, no un descuido.</div>
+  </section>
+
+  <!-- 4 · Ley de los pocos -->
+  <section class="scene" data-name="La ley de los pocos">
+    <div class="eyebrow">Quién produce las reseñas</div>
+    <div class="row">
+      <div class="col">
+        <h2 data-step="0">¿Quién escribe las reseñas?</h2>
+        <p class="lead" data-step="1"><strong style="color:var(--paper)">La mayoría, una sola vez.</strong> La actividad sigue una ley de potencia: unos pocos usuarios y negocios acumulan miles de reseñas, y una larga cola aporta muy poco.</p>
+        <div class="grid-stats" data-step="2">
+          <div class="gs"><b>88.1%</b><span>usuarios con 1 reseña</span></div>
+          <div class="gs"><b>16.5%</b><span>élite → 25% de reseñas</span></div>
+        </div>
+      </div>
+      <div class="col"><svg class="viz" id="svg-power" viewBox="0 0 600 380" preserveAspectRatio="xMidYMid meet"></svg></div>
+    </div>
+    <div class="ficha" data-step="3"><span class="t">Dato · Parte I</span>Ratings con forma de J (moda en 4–5★). La concentración de la señal reaparece en recomendación (Parte IV) y en la ética (Parte VII): pocos escriben la realidad de la que aprenden todos los modelos.</div>
+  </section>
+
+  <!-- 5 · La red -->
+  <section class="scene" data-name="La red">
+    <div class="eyebrow">La red de amistades</div>
+    <div class="row">
+      <div class="col">
+        <h2 data-step="0">Un núcleo conectado</h2>
+        <p class="lead" data-step="1">El grafo de amistades es ralo y fragmentado, pero tiene una componente conexa grande que sostiene todo el análisis de la Parte II.</p>
+        <div class="grid-stats" data-step="2">
+          <div class="gs"><b>40.4%</b><span>en la componente mayor</span></div>
+          <div class="gs"><b>305,776</b><span>amistades</span></div>
+        </div>
+      </div>
+      <div class="col"><svg class="viz" id="svg-core" viewBox="0 0 620 480" preserveAspectRatio="xMidYMid meet"></svg></div>
+    </div>
+    <div class="ficha" data-step="3"><span class="t">Cómo · Parte I → II</span>Grafo con listas de adyacencia propias. La componente conexa mayor (41,832 usuarios) se halla por BFS; el diámetro (≈15) por doble barrido BFS, a mano.</div>
+  </section>
+
+  <!-- 6 · PageRank -->
+  <section class="scene" data-name="La sorpresa">
+    <div class="eyebrow">Influencia estructural · PageRank</div>
+    <div class="row">
+      <div class="col">
+        <h2 data-step="0">¿Quién manda en la red de amistades?</h2>
+        <p class="lead" data-step="1"><strong style="color:var(--paper)">Influir no es ser popular.</strong> PageRank sobre la red de amistades mide centralidad social. Correlaciona fuerte con el número de amigos (0.98), pero solo moderado con los fans (0.48) y débil con el volumen de reseñas (0.36).</p>
+      </div>
+      <div class="col"><svg class="viz" id="svg-scatter" viewBox="0 0 620 460" preserveAspectRatio="xMidYMid meet"></svg></div>
+    </div>
+    <div class="ficha" data-step="3"><span class="t">Cómo · Parte II</span>PageRank iterativo a mano (d=0.85, tolerancia 10⁻⁶), 40 iteraciones sobre la componente conexa mayor. Maneja nodos colgantes.</div>
+  </section>
+
+  <!-- 7 · HITS -->
+  <section class="scene" data-name="Hubs y authorities">
+    <div class="eyebrow">HITS · hubs y authorities</div>
+    <h2 data-step="0">Quién reseña importa más que cuántos</h2>
+    <div class="lenses">
+      <div class="lens" data-step="1"><div class="d" style="background:var(--coral)"></div><h4>Hub</h4><p>Un reseñador prolífico y diverso: apunta a muchos negocios buenos.</p></div>
+      <div class="lens" data-step="2"><div class="d" style="background:var(--amber)"></div><h4>Authority</h4><p>Un negocio validado por buenos reseñadores, no simplemente el más reseñado.</p></div>
+    </div>
+    <div class="pill" data-step="3">La autoridad correlaciona <em>0.43</em> con el nº de reseñas: HITS pondera <em>quién</em> reseña, no cuántos.</div>
+    <div class="ficha" data-step="4"><span class="t">Cómo · Parte II</span>HITS sobre el grafo bipartito usuario–negocio, 39 iteraciones, con normalización L2 en cada paso.</div>
+  </section>
+
+  <!-- 8 · Comunidades -->
+  <section class="scene" data-name="Los grupos">
+    <div class="eyebrow">Comunidades · Louvain</div>
+    <div class="row">
+      <div class="col">
+        <h2 data-step="0">¿Hay círculos de amistad, o es una masa?</h2>
+        <p class="lead" data-step="1"><strong style="color:var(--paper)">Círculos: 140 comunidades bien definidas.</strong> Louvain encuentra una estructura comunitaria fuerte: círculos de usuarios que se declaran amigos y reseñan los mismos negocios locales.</p>
+        <div class="grid-stats" data-step="2">
+          <div class="gs"><b>140</b><span>comunidades</span></div>
+          <div class="gs"><b>0.656</b><span>modularidad Q</span></div>
+        </div>
+      </div>
+      <div class="col"><svg class="viz" id="svg-comm" viewBox="0 0 600 470" preserveAspectRatio="xMidYMid meet"></svg></div>
+    </div>
+    <div class="ficha" data-step="3"><span class="t">Cómo · Parte II</span>Louvain a mano: movimiento local que maximiza modularidad + agregación por niveles. Las cinco comunidades mayores agrupan el 66% de la componente conexa.</div>
+  </section>
+
+  <!-- 9 · Tres lentes -->
+  <section class="scene" data-name="Tres lentes">
+    <div class="eyebrow">Síntesis · Parte II</div>
+    <h2 data-step="0">¿Ser influyente es lo mismo que ser buen reseñador?</h2>
+    <p class="lead" data-step="1"><strong style="color:var(--paper)">No: hay tres tipos de poder, y casi no se solapan.</strong></p>
+    <div class="lenses">
+      <div class="lens" data-step="1"><div class="d" style="background:var(--amber)"></div><h4>Social</h4><p>PageRank: con quién estás conectado.</p></div>
+      <div class="lens" data-step="2"><div class="d" style="background:var(--coral)"></div><h4>Reseñador</h4><p>Hub de HITS: cuánto y qué tan bien reseñas.</p></div>
+      <div class="lens" data-step="3"><div class="d" style="background:var(--sage)"></div><h4>Comercial</h4><p>Authority de HITS: qué negocios validan los buenos hubs.</p></div>
+    </div>
+    <div class="pill" data-step="4">Se solapan poco: apenas <em>1 de 15</em> en el top-15 (correlación 0.023). Cada lente mide algo distinto.</div>
+  </section>
+
+  <!-- 10 · Cinco tipos -->
+  <section class="scene" data-name="Cinco tipos">
+    <div class="eyebrow">Clustering · Parte III</div>
+    <h2 data-step="0">¿En qué se agrupan los negocios?</h2>
+    <p class="lead" data-step="1"><strong style="color:var(--paper)">En cinco arquetipos de comportamiento.</strong></p>
+    <div class="cards">
+      <div class="card veteran" data-step="1"><div class="ico">🍽️</div><h3>Gastronomía consolidada</h3><p class="desc">Muchos reseñas, antiguos, abiertos. Los pesos pesados.</p><div class="met">n = 631</div></div>
+      <div class="card" data-step="1"><div class="ico">⚠️</div><h3>Menor supervivencia</h3><p class="desc">Mixtos, valorados a medias, en riesgo.</p><div class="met">n = 439</div></div>
+      <div class="card" data-step="1"><div class="ico">🛍️</div><h3>Comercio y servicios activos</h3><p class="desc">Tiendas y servicios con actividad estable.</p><div class="met">n = 513</div></div>
+      <div class="card" data-step="1"><div class="ico">🚫</div><h3>Cerrados</h3><p class="desc">0% abiertos: el clustering aisló el ciclo de vida.</p><div class="met">n = 436</div></div>
+      <div class="card" data-step="1"><div class="ico">🌱</div><h3>Bajo volumen, abiertos</h3><p class="desc">Pocas reseñas pero 100% en operación.</p><div class="met">n = 924</div></div>
+    </div>
+    <div class="ficha" data-step="2"><span class="t">Cómo · Parte III</span>K-Means++ a mano (inicialización D²). k=5 elegido por método del codo + coeficiente de silueta (0.167). Las categorías se usan solo para describir, no para formar los grupos.</div>
+  </section>
+
+  <!-- 11 · TÉCNICA: la silueta lavada -->
+  <section class="scene tech" data-name="El tropiezo">
+    <div class="eyebrow">Aclaración técnica · Parte III</div>
+    <div class="row">
+      <div class="col">
+        <h2 data-step="0">Por qué las categorías pesan 0</h2>
+        <p class="lead" data-step="1">El primer intento incluyó las 18 categorías one-hot con peso pleno. La silueta salía plana y trepaba hasta el borde: la maldición de la dimensionalidad sobre columnas binarias y dispersas.</p>
+        <p class="lead" data-step="2">Diagnóstico → peso 0 a las categorías → la silueta recuperó un pico limpio en <em class="hl s">k=5</em>.</p>
+      </div>
+      <div class="col"><svg class="viz" id="svg-sil" viewBox="0 0 600 400" preserveAspectRatio="xMidYMid meet"></svg></div>
+    </div>
+    <div class="ficha" data-step="3"><span class="t">El criterio</span>Diagnosticar, no maquillar. El recorrido (incluir → detectar el lavado → corregir) es en sí mismo la evidencia de criterio analítico.</div>
+  </section>
+
+  <!-- 12 · DBSCAN outliers -->
+  <section class="scene" data-name="Las rarezas">
+    <div class="eyebrow">DBSCAN · detección de outliers</div>
+    <div class="row">
+      <div class="col">
+        <h2 data-step="0">¿Todos los negocios caen en algún grupo?</h2>
+        <p class="lead" data-step="1"><strong style="color:var(--paper)">No: el mercado es un continuo, con 190 rarezas.</strong> DBSCAN no impone k ni asume grupos redondos: revela que el mercado es un continuo con un cluster dominante, y aísla los negocios genuinamente atípicos.</p>
+        <div class="grid-stats" data-step="3">
+          <div class="gs"><b>0.167</b><span>silueta K-Means</span></div>
+          <div class="gs"><b>0.082</b><span>silueta DBSCAN</span></div>
+        </div>
+      </div>
+      <div class="col"><svg class="viz" id="svg-outliers" viewBox="0 0 620 460" preserveAspectRatio="xMidYMid meet"></svg></div>
+    </div>
+    <div class="ficha" data-step="4"><span class="t">Cómo · Parte III</span>DBSCAN a mano. eps=2.0 fijado con el k-distance plot; minPts=10. No compiten: K-Means segmenta, DBSCAN detecta anomalías. Los 190 outliers alimentan la ética (Parte VII).</div>
+  </section>
+
+  <!-- 13 · Recomendación -->
+  <section class="scene" data-name="Qué recomendar">
+    <div class="eyebrow">Recomendación · Parte IV</div>
+    <h2 data-step="0">¿Qué conviene para recomendar?</h2>
+    <p class="lead" data-step="1"><strong style="color:var(--paper)">El filtrado colaborativo, y por bastante.</strong></p>
+    <div class="ranklist" style="margin-top:1.5rem">
+      <div class="rk" data-step="1"><span class="nm">CF item–item</span><div class="rbwrap"><div class="rb" style="--w:100%"></div></div><span class="rv">0.070</span></div>
+      <div class="rk base" data-step="2"><span class="nm">Top-popular</span><div class="rbwrap"><div class="rb" style="--w:41%"></div></div><span class="rv">0.029</span></div>
+      <div class="rk base" data-step="2"><span class="nm">Content-based</span><div class="rbwrap"><div class="rb" style="--w:27%"></div></div><span class="rv">0.019</span></div>
+      <div class="rk base" data-step="2"><span class="nm">Aleatorio</span><div class="rbwrap"><div class="rb" style="--w:2%"></div></div><span class="rv">0.001</span></div>
+    </div>
+    <p class="kicker" data-step="3">NDCG@10 · el CF es 54× el aleatorio y 2.4× el top-popular</p>
+    <div class="ficha" data-step="4"><span class="t">Cómo · Parte IV</span>CF item–item: similitud coseno sobre ratings centrados por usuario, mínimo 3 co-ratings, k-NN ponderado a 30 vecinos. Evaluación con split temporal 80/20.</div>
+  </section>
+
+  <!-- 14 · Cold-start / híbrido -->
+  <section class="scene" data-name="El cold-start">
+    <div class="eyebrow">El problema del cold-start</div>
+    <h2 data-step="0">El CF no ve al 88%</h2>
+    <p class="lead" data-step="1">El filtrado colaborativo necesita co-ratings que la mayoría de usuarios no puede aportar. Ahí entra el híbrido: el content-based puntúa cualquier negocio con texto, incluso con una sola reseña.</p>
+    <div class="grid-stats" data-step="2">
+      <div class="gs"><b>α = 0.6</b><span>peso óptimo del CF</span></div>
+      <div class="gs"><b>cobertura</b><span>no precisión</span></div>
+    </div>
+    <div class="ficha" data-step="3"><span class="t">Por qué · Parte IV</span>El valor del híbrido no está en superar al CF en ranking, sino en cubrir a quienes el CF no puede puntuar. s = α·CF + (1−α)·CB.</div>
+  </section>
+
+  <!-- 15 · Flujos -->
+  <section class="scene" data-name="17 años">
+    <div class="eyebrow">Minería de flujos · Parte V</div>
+    <h2 data-step="0">17 años de actividad, procesados como un flujo</h2>
+    <p class="lead" data-step="1">Las reseñas, ordenadas por fecha, se procesan una a la vez con memoria acotada: ventanas deslizantes (1h/4h/24h), conteo aproximado y conteo de únicos.</p>
+    <div class="grid-stats" data-step="2">
+      <div class="gs"><b>~8×</b><span>menos memoria (CMS)</span></div>
+      <div class="gs"><b>100%</b><span>dentro de la cota de error</span></div>
+      <div class="gs"><b>256</b><span>enteros para contar únicos (FM)</span></div>
+    </div>
+    <div class="ficha" data-step="3"><span class="t">Cómo · Parte V</span>Ventanas con deque (expulsión O(1)). Count-Min Sketch con familia hash universal: 13,595 celdas vs 103,449 claves, error medio 36. Flajolet–Martin/LogLog estima 108,095 únicos (+4.5%).</div>
+  </section>
+
+  <!-- 16 · Parte VI · PCA -->
+  <section class="scene" data-name="Sin redundancia">
+    <div class="eyebrow">Reducción de dimensionalidad · Parte VI</div>
+    <div class="row">
+      <div class="col">
+        <h2 data-step="0">28 dimensiones y casi nada sobra</h2>
+        <p class="lead" data-step="1">PCA sobre las features de negocio: hacen falta <em class="hl">20 de 28</em> componentes para explicar el 90% de la varianza. Casi no hay compresión — y eso es un hallazgo: las features aportan información independiente, como se diseñaron en la Parte III.</p>
+        <div class="grid-stats" data-step="2">
+          <div class="gs"><b>20 / 28</b><span>componentes para el 90%</span></div>
+          <div class="gs"><b>12.9%</b><span>varianza en PC1</span></div>
+        </div>
+      </div>
+      <div class="col"><svg class="viz" id="svg-scree" viewBox="0 0 620 420" preserveAspectRatio="xMidYMid meet"></svg></div>
+    </div>
+    <div class="ficha" data-step="3"><span class="t">Cómo · Parte VI</span>Eigendecomposición de la covarianza (eigh), validada contra la SVD de numpy: coincidencia numérica exacta. Las PCs son legibles: PC1 popularidad+gastronomía, PC2 vida nocturna, PC3 comercio, PC4 opone calidad a antigüedad. La proyección 2D muestra un gradiente de estrellas continuo — consistente con la Parte III: no hay clusters de densidad.</div>
+  </section>
+
+  <!-- 17 · Parte VI · SVD -->
+  <section class="scene" data-name="Temas latentes">
+    <div class="eyebrow">Reducción de dimensionalidad · Parte VI</div>
+    <div class="row">
+      <div class="col">
+        <h2 data-step="0">¿Hay rubros ocultos en el texto?</h2>
+        <p class="lead" data-step="1"><strong style="color:var(--paper)">Sí, y la SVD los saca sola.</strong> Sobre la matriz TF–IDF (2,943 negocios × 2,000 términos), los factores singulares son temas legibles. Nadie le dijo al algoritmo que existían rubros: emergen de las co-ocurrencias de palabras.</p>
+        <div class="chips" data-step="2">
+          <div class="chip"><h4>Gastronomía</h4><p>pizza · food · chicken</p></div>
+          <div class="chip"><h4>Cuidado personal</h4><p>hair · salon · cut</p></div>
+          <div class="chip"><h4>Automotriz</h4><p>car · vehicle · wash</p></div>
+          <div class="chip"><h4>Hotelería</h4><p>pool · hotel · room</p></div>
+          <div class="chip"><h4>Mexicana</h4><p>tacos · taco · burger</p></div>
+        </div>
+      </div>
+      <div class="col"><svg class="viz" id="svg-svdk" viewBox="0 0 620 420" preserveAspectRatio="xMidYMid meet"></svg></div>
+    </div>
+    <div class="ficha" data-step="3"><span class="t">El trade-off · Parte VI</span>Por Eckart–Young la SVD truncada es la mejor aproximación de rango k posible. El codo económico está en k=100: 12× menos memoria reteniendo el 56% de la varianza. Recuperar el 80% ya exige k=400 — el texto libre es intrínsecamente de alta dimensión.</div>
+  </section>
+
+  <!-- 18 · Parte VII · concentración -->
+  <section class="scene" data-name="Una minoría">
+    <div class="eyebrow">Análisis crítico y ético · Parte VII</div>
+    <div class="row">
+      <div class="col">
+        <h2 data-step="0">Una minoría escribe la realidad</h2>
+        <p class="lead" data-step="1">Todos los modelos aprenden de las reseñas, y la señal está muy concentrada. No es una estadística decorativa: rastreamos sus consecuencias dentro de nuestro propio pipeline.</p>
+        <div class="grid-stats" data-step="2">
+          <div class="gs"><b>0.666</b><span>Gini de reseñas por negocio</span></div>
+          <div class="gs"><b>17.9%</b><span>reseñas en el top 1%</span></div>
+          <div class="gs"><b>34%</b><span>negocios con &lt;10 reseñas</span></div>
+        </div>
+      </div>
+      <div class="col"><svg class="viz" id="svg-lorenz" viewBox="0 0 620 440" preserveAspectRatio="xMidYMid meet"></svg></div>
+    </div>
+    <div class="ficha" data-step="3"><span class="t">Rastreado en el pipeline · Parte VII</span>El clustering usa log_reviews como feature: los poco reseñados caen a clusters de "baja señal" por invisibles, no por peores. PageRank correlaciona 0.977 con las amistades (rich-get-richer). El CF exige co-ratings que el 88% no puede aportar: reciben top-popular. Ningún ajuste posterior recupera a quienes no están en los datos.</div>
+  </section>
+
+  <!-- 19 · Parte VII · equidad -->
+  <section class="scene" data-name="No hay ranking neutro">
+    <div class="eyebrow">Equidad · Parte VII</div>
+    <h2 data-step="0">No hay ranking neutro</h2>
+    <p class="lead" data-step="1">En calidad percibida ganan los independientes por un punto entero; la ventaja de las cadenas es estructural: sobreviven más. La métrica que ordena el ranking decide a quién favorece.</p>
+    <div class="ranklist" style="margin-top:1.4rem;width:min(660px,74vw)">
+      <div class="rk" data-step="2"><span class="nm" style="min-width:26ch">Independientes · rating</span><div class="rbwrap"><div class="rb" style="--w:73%"></div></div><span class="rv">3.63★</span></div>
+      <div class="rk base" data-step="2"><span class="nm" style="min-width:26ch">Cadenas (≥5 locales) · rating</span><div class="rbwrap"><div class="rb" style="--w:52%"></div></div><span class="rv">2.60★</span></div>
+      <div class="rk base" data-step="3"><span class="nm" style="min-width:26ch">Independientes · abiertos</span><div class="rbwrap"><div class="rb" style="--w:78%"></div></div><span class="rv">78%</span></div>
+      <div class="rk" data-step="3"><span class="nm" style="min-width:26ch">Cadenas (≥5 locales) · abiertos</span><div class="rbwrap"><div class="rb" style="--w:92%"></div></div><span class="rv">92%</span></div>
+    </div>
+    <div class="pill" data-step="4">Feedback loop: el <em>34%</em> de negocios con &lt;10 reseñas casi no puede entrar a un top-10 — no lo recomiendan porque no tiene reseñas, y no tiene reseñas porque no lo recomiendan.</div>
+    <div class="ficha" data-step="5"><span class="t">Mitigaciones · Parte VII</span>Conservar el content-based (puntúa con una sola reseña), cuotas de diversidad y posiciones de exploración en el top-K — aceptando una pérdida medida de NDCG — y auditar las métricas por segmento, no solo en promedio.</div>
+  </section>
+
+  <!-- 20 · TÉCNICA: escalabilidad -->
+  <section class="scene tech" data-name="Aclaración · escala">
+    <div class="eyebrow">Aclaración técnica · Parte VII</div>
+    <h2 data-step="0">Qué escala y qué no</h2>
+    <table class="datatable" data-step="1">
+      <thead><tr><th>Algoritmo</th><th>Costo</th><th>¿Escala?</th></tr></thead>
+      <tbody>
+        <tr><td class="alg">Streaming + muestreo</td><td>O(N), memoria fija</td><td class="yes">sí</td></tr>
+        <tr><td class="alg">PageRank / HITS / Louvain</td><td>lineal en aristas</td><td class="yes">sí</td></tr>
+        <tr><td class="alg">K-Means++ / PCA</td><td>O(it·nkd) / O(d³)</td><td class="yes">sí</td></tr>
+        <tr><td class="alg">CMS / Flajolet–Martin</td><td>O(1) por evento</td><td class="yes">sí</td></tr>
+        <tr><td class="alg">SVD truncada / TF-IDF ralo</td><td>k factores</td><td class="yes">sí</td></tr>
+        <tr><td class="alg">Similitud item–item</td><td>O(b²m)</td><td class="mid">parcial (b chico)</td></tr>
+        <tr><td class="alg">DBSCAN denso / silueta</td><td>O(n²)</td><td class="no">no</td></tr>
+        <tr><td class="alg">Layout force-directed</td><td>O(it·n²)</td><td class="no">no</td></tr>
+      </tbody>
+    </table>
+    <div class="pill" data-step="2">El número para llevarse: la matriz de distancias pesa <em>69 MB</em> con 2,943 negocios · con 300k serían <em>~700 GB</em>. No es lento: no cabe.</div>
+    <div class="ficha" data-step="3"><span class="t">Matiz honesto</span>El dict exacto (en C) es más rápido que nuestro CMS en Python puro (0.02s vs 0.63s). La ventaja del sketch no es velocidad: es memoria fija, error acotado y unilateral, y que dos sketches se fusionan sumándolos entre nodos de un cluster. En producción, lo O(n²) se reemplaza por índices espaciales o LSH.</div>
+  </section>
+
+  <!-- 21 · Cierre -->
+  <section class="scene" data-name="Qué aprendimos">
+    <div class="eyebrow">Cierre</div>
+    <h2 data-step="0">¿Qué aprendimos?</h2>
+    <div class="takes">
+      <div class="take" data-step="1"><span class="n">01</span><p>Influencia, popularidad y actividad son cosas distintas. PageRank, HITS y Louvain lo muestran por separado.</p></div>
+      <div class="take" data-step="2"><span class="n">02</span><p>El mercado no se divide en cajas nítidas: es un continuo. Lo confirman la silueta baja y DBSCAN.</p></div>
+      <div class="take" data-step="3"><span class="n">03</span><p>Una minoría produce casi toda la señal, y eso condiciona todo lo que los modelos aprenden.</p></div>
+    </div>
+  </section>
+
+</main>
+
+<div class="hud">
+  <div class="rail" id="rail"></div>
+  <div class="meta" id="meta"></div>
+</div>
+<div class="hint" id="hint">← → o <kbd>espacio</kbd> para avanzar · <kbd>f</kbd> pantalla completa</div>
+
+<script>
+(function(){
+  "use strict";
+  const deck=document.getElementById('deck');
+  const scenes=Array.from(deck.querySelectorAll('.scene'));
+  const rail=document.getElementById('rail');
+  const meta=document.getElementById('meta');
+  const hint=document.getElementById('hint');
+  const NS='http://www.w3.org/2000/svg';
+  const eln=(n,a)=>{const x=document.createElementNS(NS,n);for(const k in a)x.setAttribute(k,a[k]);return x;};
+  const rng=s=>()=>{s=(s*1664525+1013904223)%4294967296;return s/4294967296;};
+
+  const maxStep=scenes.map(s=>{let m=0;s.querySelectorAll('[data-step]').forEach(e=>m=Math.max(m,+e.dataset.step));return m;});
+  let si=0,st=0; const drawn=new Set(); const liveReg={};
+
+  scenes.forEach((s,i)=>{const b=document.createElement('button');b.title=s.dataset.name;b.onclick=ev=>{ev.stopPropagation();go(i,0);};rail.appendChild(b);});
+
+  let rafId=null,liveFn=null;
+  function stopLive(){ if(rafId)cancelAnimationFrame(rafId); rafId=null; liveFn=null; }
+  function startLive(fn){ stopLive(); liveFn=fn; const loop=t=>{ if(liveFn){liveFn(t); rafId=requestAnimationFrame(loop);} }; rafId=requestAnimationFrame(loop); }
+
+  function applySteps(){
+    const s=scenes[si];
+    s.querySelectorAll('[data-step]').forEach(e=>e.classList.toggle('on',+e.dataset.step<=st));
+    s.querySelectorAll('.frow.on .fbar i').forEach(i=>i.style.width=i.style.getPropertyValue('--w'));
+    s.querySelectorAll('.rk.on .rb').forEach(b=>b.style.width=b.style.getPropertyValue('--w'));
+    if(!drawn.has(si)){ drawn.add(si); const fn=builders[s.dataset.name]; if(fn) fn(s,si); }
+    s.querySelectorAll('[data-step].on .count').forEach(runCount);
+    stepHooks(s.dataset.name);
+  }
+  function show(){
+    scenes.forEach((s,i)=>{s.classList.toggle('is-active',i===si);s.classList.toggle('is-past',i<si);});
+    Array.from(rail.children).forEach((b,i)=>{b.className='';if(i<si)b.classList.add('done');if(i===si)b.classList.add('now');});
+    meta.textContent=String(si+1).padStart(2,'0')+' / '+scenes.length+'  ·  '+scenes[si].dataset.name;
+    applySteps();
+    stopLive(); if(liveReg[si]) startLive(liveReg[si]);
+  }
+  function go(i,s){si=Math.max(0,Math.min(scenes.length-1,i));st=s==null?0:s;show();}
+  function next(){ if(st<maxStep[si]){st++;applySteps();} else if(si<scenes.length-1){si++;st=0;show();} hint.classList.add('gone'); }
+  function prev(){ if(st>0){st--;applySteps();} else if(si>0){si--;st=maxStep[si];show();} }
+
+  document.addEventListener('keydown',e=>{
+    if(['ArrowRight','ArrowDown','PageDown',' '].includes(e.key)){e.preventDefault();next();}
+    else if(['ArrowLeft','ArrowUp','PageUp'].includes(e.key)){e.preventDefault();prev();}
+    else if(e.key==='f'||e.key==='F'){const d=document;(d.fullscreenElement?d.exitFullscreen():d.documentElement.requestFullscreen()).catch(()=>{});}
+    else if(e.key==='Home'){go(0,0);}
+  });
+  deck.addEventListener('click',e=>{ if(e.target.closest('button'))return; next(); });
+
+  function runCount(el){ if(el.dataset.done)return; el.dataset.done=1;
+    const target=+el.dataset.target,dur=1400,t0=performance.now();
+    (function tick(t){const p=Math.min(1,(t-t0)/dur);const e=1-Math.pow(1-p,3);
+      el.textContent=Math.round(target*e).toLocaleString('en-US');if(p<1)requestAnimationFrame(tick);})(t0); }
+
+  /* ===== builders ===== */
+  const builders={};
+
+  function networkScene(svgId, sceneIdx, seed, opts){
+    const svg=document.getElementById(svgId); const r=rng(seed);
+    const o=opts||{};
+    if(o.isolated){ for(let i=0;i<200;i++){ const c=eln('circle',{cx:r()*600,cy:r()*460,r:1.3,fill:'#574d40',opacity:0});
+      svg.appendChild(c); setTimeout(()=>{c.style.transition='opacity .5s';c.setAttribute('opacity',.32);},150+i*4); } }
+    const nodes=[],edges=[];
+    if(o.communities){
+      const cols=['#f0a93c','#e6604a','#9bb083','#cf9bd0','#7fb0c8','#d8a06a'];
+      const sizes=[15,12,11,11,8,7]; const leaders=['Michelle','Abby','Kaitlyn','Niki','Aaron',''];
+      const cx=300,cy=230,R=145;
+      sizes.forEach((n,gi)=>{ const ga=(gi/6)*6.2832-1.0,gx=cx+Math.cos(ga)*R,gy=cy+Math.sin(ga)*R;
+        const start=nodes.length;
+        nodes.push({bx:gx,by:gy,ph:r()*6.28,lead:true,col:cols[gi],name:leaders[gi]});
+        for(let i=1;i<n;i++){const a=r()*6.28,rad=14+r()*44;nodes.push({bx:gx+Math.cos(a)*rad,by:gy+Math.sin(a)*rad,ph:r()*6.28,col:cols[gi]});}
+        for(let i=1;i<n;i++)edges.push([start,start+i,cols[gi]]);
+      });
+      for(let i=0;i<5;i++){
+        const li=[0,15,27,38,49][i], lj=[15,27,38,49,57][i];
+        if(nodes[li]&&nodes[lj])edges.push([li,lj,'rgba(236,226,208,.5)',true]); }
+    } else {
+      const cx=o.cx||360,cy=240;
+      for(let i=0;i<46;i++){const a=r()*6.28,rad=20+r()*150;
+        nodes.push({bx:cx+Math.cos(a)*rad*(.6+r()*.5),by:cy+Math.sin(a)*rad*(.6+r()*.5),ph:r()*6.28,col:'#f0a93c'});}
+      nodes.forEach((n,i)=>{const k=1+(r()*2|0);for(let j=0;j<k;j++){const t=r()*nodes.length|0;if(t!==i)edges.push([i,t,'rgba(240,169,60,.28)']);}});
+    }
+    const eEl=edges.map(e=>{const a=nodes[e[0]],b=nodes[e[1]];
+      const l=eln('line',{x1:a.bx,y1:a.by,x2:b.bx,y2:b.by,stroke:e[2],'stroke-width':e[3]?1:.7,opacity:0});
+      svg.appendChild(l);return l;});
+    const nEl=nodes.map((n,i)=>{const c=eln('circle',{cx:n.bx,cy:n.by,r:0,fill:n.col,opacity:.95});svg.appendChild(c);return c;});
+    eEl.forEach((l,i)=>setTimeout(()=>{l.style.transition='opacity .5s';l.setAttribute('opacity',edges[i][3]?1:.28);},i*8));
+    nEl.forEach((c,i)=>setTimeout(()=>{c.style.transition='r .5s cubic-bezier(.2,1.6,.4,1)';c.setAttribute('r',nodes[i].lead?7:(o.communities?3+r()*2:2.4+r()*2.2));},120+i*14));
+    nodes.forEach((n,i)=>{ if(n.lead&&n.name){const t=eln('text',{x:n.bx,y:n.by-13,fill:'#ece2d0','font-size':11,'text-anchor':'middle','font-weight':700,opacity:0});t.textContent=n.name;svg.appendChild(t);n._t=t;
+      setTimeout(()=>{t.style.transition='opacity .5s';t.setAttribute('opacity',1);},900+i*10);} });
+    liveReg[sceneIdx]=(t)=>{ const A=o.communities?3:5;
+      for(let i=0;i<nodes.length;i++){const n=nodes[i];
+        n.x=n.bx+Math.sin(t*0.0006+n.ph)*A; n.y=n.by+Math.cos(t*0.0005+n.ph*1.3)*A;
+        nEl[i].setAttribute('cx',n.x.toFixed(1)); nEl[i].setAttribute('cy',n.y.toFixed(1));
+        if(n._t){n._t.setAttribute('x',n.x.toFixed(1));n._t.setAttribute('y',(n.y-13).toFixed(1));}}
+      for(let i=0;i<edges.length;i++){const a=nodes[edges[i][0]],b=nodes[edges[i][1]];
+        eEl[i].setAttribute('x1',(a.x||a.bx).toFixed(1));eEl[i].setAttribute('y1',(a.y||a.by).toFixed(1));
+        eEl[i].setAttribute('x2',(b.x||b.bx).toFixed(1));eEl[i].setAttribute('y2',(b.y||b.by).toFixed(1));}
+    };
+  }
+  builders['La red']=(s,i)=>networkScene('svg-core',i,5,{cx:300});
+  builders['Los grupos']=(s,i)=>networkScene('svg-comm',i,23,{communities:true});
+
+  builders['La ley de los pocos']=function(s,i){
+    const svg=document.getElementById('svg-power'); const x0=70,x1=520,y0=320,y1=50;
+    svg.appendChild(eln('line',{x1:x0,y1:y0,x2:x1,y2:y0,stroke:'var(--line)'}));
+    svg.appendChild(eln('line',{x1:x0,y1:y0,x2:x0,y2:y1,stroke:'var(--line)'}));
+    let d='';for(let k=0;k<=100;k++){const x=x0+(x1-x0)*k/100;const v=Math.pow((k/100)+0.02,-1.3);const y=y0-(y0-y1)*Math.min(1,v/8);d+=(k?'L':'M')+x.toFixed(1)+' '+y.toFixed(1)+' ';}
+    const p=eln('path',{d:d,fill:'none',stroke:'#e6604a','stroke-width':2.6});svg.appendChild(p);
+    const len=p.getTotalLength();p.style.strokeDasharray=len;p.style.strokeDashoffset=len;
+    setTimeout(()=>{p.style.transition='stroke-dashoffset 1.4s ease';p.style.strokeDashoffset=0;},200);
+    const t1=eln('text',{x:120,y:100,fill:'#f0a93c','font-size':13});t1.textContent='pocos hiperactivos';svg.appendChild(t1);
+    const t2=eln('text',{x:300,y:300,fill:'#8a7c67','font-size':13});t2.textContent='larga cola: 1 sola reseña';svg.appendChild(t2);
+    const ax=eln('text',{x:(x0+x1)/2,y:360,fill:'#8a7c67','font-size':12,'text-anchor':'middle'});ax.textContent='usuarios ordenados por actividad →';svg.appendChild(ax);
+  };
+
+  builders['La sorpresa']=function(s,i){
+    const svg=document.getElementById('svg-scatter'); const r=rng(11);
+    const X0=70,X1=560,Y0=400,Y1=40;
+    const xs=v=>X0+(X1-X0)*Math.min(1,v/1200), ys=v=>Y0+(Y1-Y0)*Math.min(1,v/0.0075);
+    svg.appendChild(eln('line',{x1:X0,y1:Y0,x2:X1,y2:Y0,stroke:'var(--line)'}));
+    svg.appendChild(eln('line',{x1:X0,y1:Y0,x2:X0,y2:Y1,stroke:'var(--line)'}));
+    const lx=eln('text',{x:(X0+X1)/2,y:435,fill:'#8a7c67','font-size':12,'text-anchor':'middle'});lx.textContent='fans (popularidad) →';svg.appendChild(lx);
+    const ly=eln('text',{x:20,y:(Y0+Y1)/2,fill:'#8a7c67','font-size':12,'text-anchor':'middle',transform:'rotate(-90 20 '+((Y0+Y1)/2)+')'});ly.textContent='PageRank (centralidad) →';svg.appendChild(ly);
+    for(let k=0;k<260;k++){const f=Math.pow(r(),2.2)*900,p=Math.pow(r(),2)*0.0042+r()*0.0006;
+      const c=eln('circle',{cx:xs(f),cy:ys(p),r:2,fill:'#6a5d4c',opacity:0});svg.appendChild(c);
+      setTimeout(()=>{c.style.transition='opacity .5s';c.setAttribute('opacity',.5);},k*4);}
+    function pt(x,y,col,lab,sub){const g=eln('g',{opacity:0});
+      g.appendChild(eln('circle',{cx:x,cy:y,r:8,fill:col}));
+      const ring=eln('circle',{cx:x,cy:y,r:8,fill:'none',stroke:col,'stroke-width':1.5,opacity:.6});g.appendChild(ring);
+      const t=eln('text',{x:x+13,y:y-5,fill:'#ece2d0','font-size':13,'font-weight':700});t.textContent=lab;g.appendChild(t);
+      const t2=eln('text',{x:x+13,y:y+11,fill:'#8a7c67','font-size':10.5});t2.textContent=sub;g.appendChild(t2);
+      svg.appendChild(g);g.style.transition='opacity .55s';g._ring=ring;g._cx=x;return g;}
+    window._pts={
+      central:pt(xs(60),ys(0.0052),'#f0a93c','Muy central','pocos fans, muchos amigos'),
+      popular:pt(xs(980),ys(0.0016),'#e6604a','Muy popular','muchos fans, poco central')};
+    const rr=eln('text',{x:X1-8,y:Y1+18,fill:'#8a7c67','font-size':12,'text-anchor':'end'});rr.textContent='r = 0.48 con fans';svg.appendChild(rr);
+    liveReg[i]=(t)=>{ for(const k in window._pts){const g=window._pts[k];
+      const R=12+Math.sin(t*0.004+g._cx)*5; g._ring.setAttribute('r',R.toFixed(1));
+      g._ring.setAttribute('opacity',(0.5*(17-R)/10).toFixed(2));}};
+  };
+
+  builders['El tropiezo']=function(s,i){
+    const svg=document.getElementById('svg-sil');const X0=70,X1=540,Y0=340,Y1=40;
+    const xs=k=>X0+(X1-X0)*(k-2)/8,ys=v=>Y0+(Y1-Y0)*(v-0.10)/0.10;
+    svg.appendChild(eln('line',{x1:X0,y1:Y0,x2:X1,y2:Y0,stroke:'var(--line)'}));
+    svg.appendChild(eln('line',{x1:X0,y1:Y0,x2:X0,y2:Y1,stroke:'var(--line)'}));
+    svg.appendChild((()=>{const t=eln('text',{x:(X0+X1)/2,y:380,fill:'#8a7c67','font-size':12,'text-anchor':'middle'});t.textContent='nº de grupos (k)';return t;})());
+    const broken=[0.130,0.134,0.126,0.128,0.120,0.118,0.140,0.150,0.166];
+    const fixed=[0.141,0.146,0.158,0.167,0.163,0.164,0.163,0.150,0.161];
+    const poly=(arr,col)=>{let d='';arr.forEach((v,k)=>d+=(k?'L':'M')+xs(k+2)+' '+ys(v)+' ');
+      const p=eln('path',{d:d,fill:'none',stroke:col,'stroke-width':2.5});svg.appendChild(p);
+      const L=p.getTotalLength();p.style.strokeDasharray=L;p.style.strokeDashoffset=L;return p;};
+    const mk=()=>{const g=eln('g',{opacity:0});g.appendChild(eln('circle',{cx:xs(5),cy:ys(0.167),r:6,fill:'none',stroke:'#9bb083','stroke-width':2}));
+      const t=eln('text',{x:xs(5),y:ys(0.167)-13,fill:'#9bb083','font-size':12,'text-anchor':'middle'});t.textContent='k=5 · 0.167';g.appendChild(t);svg.appendChild(g);return g;};
+    window._sil={broken:poly(broken,'#e6604a'),fixed:poly(fixed,'#9bb083'),mark:mk()};
+  };
+
+  builders['Sin redundancia']=function(s,i){
+    const svg=document.getElementById('svg-scree');
+    const X0=64,X1=580,Y0=360,Y1=46;
+    const evr=[12.9,7.1,6.5,6.2,5.4,5.0,4.7,4.4,4.1,3.9,3.7,3.5,3.3,3.1,2.9,2.8,2.7,2.6,2.5,2.4,1.6,1.5,1.4,1.3,1.2,1.2,1.1,1.0];
+    svg.appendChild(eln('line',{x1:X0,y1:Y0,x2:X1,y2:Y0,stroke:'var(--line)'}));
+    svg.appendChild(eln('line',{x1:X0,y1:Y0,x2:X0,y2:Y1,stroke:'var(--line)'}));
+    const xs=k=>X0+(X1-X0)*(k+0.5)/28, ysC=v=>Y0-(Y0-Y1)*(v/100);
+    // barras: varianza individual (escalada ×4 para que se lean)
+    evr.forEach((v,k)=>{const h=(Y0-Y1)*(v*4/100);
+      const b=eln('rect',{x:xs(k)-6,y:Y0,width:12,height:0,fill:k<20?'#f0a93c':'#574d40',opacity:.85,rx:2});
+      svg.appendChild(b);
+      setTimeout(()=>{b.style.transition='y .6s ease,height .6s ease';b.setAttribute('y',Y0-h);b.setAttribute('height',h);},150+k*30);});
+    // curva acumulada
+    let cum=0,d='';
+    evr.forEach((v,k)=>{cum+=v;d+=(k?'L':'M')+xs(k).toFixed(1)+' '+ysC(cum).toFixed(1)+' ';});
+    const p=eln('path',{d:d,fill:'none',stroke:'#e6604a','stroke-width':2.4});svg.appendChild(p);
+    const L=p.getTotalLength();p.style.strokeDasharray=L;p.style.strokeDashoffset=L;
+    setTimeout(()=>{p.style.transition='stroke-dashoffset 1.5s ease';p.style.strokeDashoffset=0;},500);
+    // guías 90% / k=20
+    svg.appendChild(eln('line',{x1:X0,y1:ysC(90),x2:X1,y2:ysC(90),stroke:'#9bb083','stroke-dasharray':'5 5',opacity:.55}));
+    svg.appendChild(eln('line',{x1:xs(19),y1:Y0,x2:xs(19),y2:ysC(90),stroke:'#9bb083','stroke-dasharray':'5 5',opacity:.55}));
+    const m=eln('circle',{cx:xs(19),cy:ysC(90),r:5,fill:'none',stroke:'#9bb083','stroke-width':2});svg.appendChild(m);
+    const t=eln('text',{x:xs(19)-10,y:ysC(90)-14,fill:'#9bb083','font-size':12,'text-anchor':'end'});t.textContent='k=20 · 90%';svg.appendChild(t);
+    const h0=(Y0-Y1)*(evr[0]*4/100);
+    const l1=eln('text',{x:xs(0)-6,y:Y0-h0-14,fill:'#f0a93c','font-size':11});l1.textContent='varianza por componente';svg.appendChild(l1);
+    const l2=eln('text',{x:X1-8,y:ysC(100)+16,fill:'#e6604a','font-size':11,'text-anchor':'end'});l2.textContent='acumulada';svg.appendChild(l2);
+    const ax=eln('text',{x:(X0+X1)/2,y:398,fill:'#8a7c67','font-size':12,'text-anchor':'middle'});ax.textContent='componentes principales (1 → 28)';svg.appendChild(ax);
+  };
+
+  builders['Temas latentes']=function(s,i){
+    const svg=document.getElementById('svg-svdk');
+    const X0=70,X1=580,Y0=350,Y1=50;
+    const xs=k=>X0+(X1-X0)*(k/400), ys=v=>Y0-(Y0-Y1)*v;
+    svg.appendChild(eln('line',{x1:X0,y1:Y0,x2:X1,y2:Y0,stroke:'var(--line)'}));
+    svg.appendChild(eln('line',{x1:X0,y1:Y0,x2:X0,y2:Y1,stroke:'var(--line)'}));
+    // curva de varianza capturada vs k (puntos medidos + interpolación suave ~ sqrt)
+    const pts=[[0,0],[10,.258],[50,.454],[100,.556],[200,.68],[300,.745],[400,.797]];
+    let d='';
+    for(let k=0;k<=400;k+=5){
+      let v=0;
+      for(let j=1;j<pts.length;j++){ if(k<=pts[j][0]){const a=pts[j-1],b=pts[j];const f=(k-a[0])/(b[0]-a[0]||1);v=a[1]+(b[1]-a[1])*(1-Math.pow(1-f,1.6));break;} v=pts[pts.length-1][1]; }
+      d+=(k?'L':'M')+xs(k).toFixed(1)+' '+ys(v).toFixed(1)+' ';
+    }
+    const p=eln('path',{d:d,fill:'none',stroke:'#7fb0c8','stroke-width':2.6});svg.appendChild(p);
+    const L=p.getTotalLength();p.style.strokeDasharray=L;p.style.strokeDashoffset=L;
+    setTimeout(()=>{p.style.transition='stroke-dashoffset 1.4s ease';p.style.strokeDashoffset=0;},300);
+    // puntos medidos con compresión
+    [[10,.258,'119×'],[50,.454,'24×'],[100,.556,'12×'],[400,.797,'3×']].forEach(([k,v,c],j)=>{
+      const g=eln('g',{opacity:0});
+      g.appendChild(eln('circle',{cx:xs(k),cy:ys(v),r:5,fill:k===100?'#f0a93c':'#7fb0c8'}));
+      const t=eln('text',{x:xs(k),y:ys(v)-12,fill:k===100?'#f0a93c':'#8a7c67','font-size':11,'text-anchor':'middle','font-weight':k===100?700:400});
+      t.textContent='k='+k+' · '+c;g.appendChild(t);svg.appendChild(g);
+      setTimeout(()=>{g.style.transition='opacity .5s';g.setAttribute('opacity',1);},900+j*180);});
+    // marca del codo
+    svg.appendChild(eln('line',{x1:xs(100),y1:Y0,x2:xs(100),y2:ys(.556),stroke:'#f0a93c','stroke-dasharray':'5 5',opacity:.5}));
+    const lx=eln('text',{x:(X0+X1)/2,y:392,fill:'#8a7c67','font-size':12,'text-anchor':'middle'});lx.textContent='k (factores retenidos) →';svg.appendChild(lx);
+    const ly=eln('text',{x:22,y:(Y0+Y1)/2,fill:'#8a7c67','font-size':12,'text-anchor':'middle',transform:'rotate(-90 22 '+((Y0+Y1)/2)+')'});ly.textContent='varianza capturada →';svg.appendChild(ly);
+  };
+
+  builders['Una minoría']=function(s,i){
+    const svg=document.getElementById('svg-lorenz');
+    const X0=80,X1=540,Y0=380,Y1=40;
+    const xs=p=>X0+(X1-X0)*p, ys=p=>Y0-(Y0-Y1)*p;
+    svg.appendChild(eln('line',{x1:X0,y1:Y0,x2:X1,y2:Y0,stroke:'var(--line)'}));
+    svg.appendChild(eln('line',{x1:X0,y1:Y0,x2:X0,y2:Y1,stroke:'var(--line)'}));
+    // diagonal de igualdad
+    const dg=eln('line',{x1:xs(0),y1:ys(0),x2:xs(1),y2:ys(1),stroke:'#9bb083','stroke-dasharray':'6 6',opacity:.7});svg.appendChild(dg);
+    const tg=eln('text',{x:xs(.44),y:ys(.52),fill:'#9bb083','font-size':11,transform:'rotate(-36 '+xs(.44)+' '+ys(.52)+')'});tg.textContent='igualdad perfecta';svg.appendChild(tg);
+    // curva de Lorenz L(p)=p^5 → Gini ≈ 0.666
+    let d='',area='M '+xs(0)+' '+ys(0)+' ';
+    for(let k=0;k<=100;k++){const p=k/100,v=Math.pow(p,5);
+      d+=(k?'L':'M')+xs(p).toFixed(1)+' '+ys(v).toFixed(1)+' ';
+      area+='L '+xs(p).toFixed(1)+' '+ys(v).toFixed(1)+' ';}
+    area+='L '+xs(1)+' '+ys(1)+' Z';
+    const sh=eln('path',{d:area,fill:'rgba(230,96,74,.13)',opacity:0});svg.appendChild(sh);
+    const p=eln('path',{d:d,fill:'none',stroke:'#e6604a','stroke-width':2.6});svg.appendChild(p);
+    const L=p.getTotalLength();p.style.strokeDasharray=L;p.style.strokeDashoffset=L;
+    setTimeout(()=>{p.style.transition='stroke-dashoffset 1.4s ease';p.style.strokeDashoffset=0;},250);
+    setTimeout(()=>{sh.style.transition='opacity .8s';sh.setAttribute('opacity',1);},1400);
+    const tG=eln('text',{x:xs(.55),y:ys(.16),fill:'#e6604a','font-size':13,'font-weight':700});tG.textContent='Gini = 0.666';svg.appendChild(tG);
+    const lx=eln('text',{x:(X0+X1)/2,y:418,fill:'#8a7c67','font-size':12,'text-anchor':'middle'});lx.textContent='negocios ordenados por nº de reseñas →';svg.appendChild(lx);
+    const ly=eln('text',{x:28,y:(Y0+Y1)/2,fill:'#8a7c67','font-size':12,'text-anchor':'middle',transform:'rotate(-90 28 '+((Y0+Y1)/2)+')'});ly.textContent='% acumulado de reseñas →';svg.appendChild(ly);
+  };
+
+  builders['Las rarezas']=function(s,i){
+    const svg=document.getElementById('svg-outliers');const r=rng(31);
+    for(let k=0;k<320;k++){const a=r()*6.28,rad=Math.pow(r(),0.6)*150;
+      const c=eln('circle',{cx:300+Math.cos(a)*rad*1.4,cy:220+Math.sin(a)*rad,r:2.2,fill:'#5f8aa8',opacity:0});svg.appendChild(c);
+      setTimeout(()=>{c.style.transition='opacity .4s';c.setAttribute('opacity',.45);},k*2);}
+    const outs=[];
+    for(let k=0;k<26;k++){const a=r()*6.28,rad=210+r()*180;
+      const x=300+Math.cos(a)*rad,y=220+Math.sin(a)*rad*0.7;
+      const c=eln('circle',{cx:Math.max(20,Math.min(580,x)),cy:Math.max(20,Math.min(420,y)),r:0,fill:'#e6604a'});svg.appendChild(c);outs.push(c);}
+    window._outs=outs;
+    const lbl=eln('text',{x:300,y:440,fill:'#e6604a','font-size':13,'text-anchor':'middle',id:'outlbl'});lbl.textContent='190 outliers · 6.5%';svg.appendChild(lbl);
+    lbl.setAttribute('opacity',0);
+  };
+
+  function stepHooks(name){
+    if(name==='La sorpresa'&&window._pts){const{central,popular}=window._pts;
+      central.setAttribute('opacity',st>=1?1:0);popular.setAttribute('opacity',st>=2?1:0);}
+    if(name==='El tropiezo'&&window._sil){const{broken,fixed,mark}=window._sil;
+      const draw=p=>{p.style.transition='stroke-dashoffset 1s ease';p.style.strokeDashoffset=0;};
+      const hide=p=>p.style.strokeDashoffset=p.getTotalLength();
+      if(st>=1)draw(broken);else hide(broken);
+      if(st>=2){draw(fixed);mark.style.transition='opacity .5s';mark.setAttribute('opacity',1);}else{hide(fixed);mark.setAttribute('opacity',0);}
+      broken.setAttribute('opacity',st>=2?0.4:1);}
+    if(name==='Las rarezas'&&window._outs){window._outs.forEach((c)=>{c.style.transition='r .5s cubic-bezier(.2,1.6,.4,1)';c.setAttribute('r',st>=2?3.4:0);});
+      const l=document.getElementById('outlbl');if(l){l.style.transition='opacity .5s';l.setAttribute('opacity',st>=2?1:0);}}
+  }
+
+  /* constelación de fondo */
+  (function(){const cv=document.getElementById('sky');const cx=cv.getContext('2d');
+    if(window.matchMedia('(prefers-reduced-motion:reduce)').matches)return;
+    let W,H,pts;function rs(){W=cv.width=innerWidth;H=cv.height=innerHeight;
+      pts=Array.from({length:Math.min(85,W/16|0)},()=>({x:Math.random()*W,y:Math.random()*H,vx:(Math.random()-.5)*.12,vy:(Math.random()-.5)*.12}));}
+    rs();addEventListener('resize',rs);
+    (function loop(){cx.clearRect(0,0,W,H);
+      for(const p of pts){p.x+=p.vx;p.y+=p.vy;if(p.x<0||p.x>W)p.vx*=-1;if(p.y<0||p.y>H)p.vy*=-1;
+        cx.beginPath();cx.arc(p.x,p.y,1,0,6.28);cx.fillStyle='rgba(240,169,60,.26)';cx.fill();}
+      for(let i=0;i<pts.length;i++)for(let j=i+1;j<pts.length;j++){const a=pts[i],b=pts[j],dx=a.x-b.x,dy=a.y-b.y,d=dx*dx+dy*dy;
+        if(d<11000){cx.beginPath();cx.moveTo(a.x,a.y);cx.lineTo(b.x,b.y);cx.strokeStyle='rgba(236,226,208,'+(0.05*(1-d/11000))+')';cx.lineWidth=.5;cx.stroke();}}
+      requestAnimationFrame(loop);})();
+  })();
+
+  show();
+})();
+</script>
+</body>
+</html>
